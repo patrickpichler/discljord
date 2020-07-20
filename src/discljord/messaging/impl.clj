@@ -10,7 +10,7 @@
    [discljord.messaging.specs :as ms]
    [discljord.specs :as ds]
    [discljord.util :refer [bot-token clean-json-input]]
-   [org.httpkit.client :as http]
+   [clj-http.lite.client :as client]
    [clojure.tools.logging :as log])
   (:import
    (java.io File Writer)
@@ -57,13 +57,13 @@
                           ::ms/major-variable-value)
            headers# (auth-headers token# user-agent#)
            headers# (if audit-reason#
-                      (assoc headers# "X-Audit-Log-Reason" (http/url-encode audit-reason#))
+                      (assoc headers# "X-Audit-Log-Reason" (URLEncoder/encode audit-reason#))
                       headers#)
            request-params# (merge-with merge
                                        ~method-params
                                        {:headers headers#})
            ~'_ (log/trace "Making request to" ~major-var "with params" request-params#)
-           response# @(~(symbol "org.httpkit.client" (name method))
+           response# @(~(symbol "clj-http.lite.client" (name method))
                        (api-url ~url-str)
                        request-params#)
            ~'_ (log/trace "Response:" response#)
@@ -143,7 +143,7 @@
         multipart (if stream
                     (conj multipart (assoc stream :name "file"))
                     multipart)
-        response @(http/post (api-url (str "/channels/" channel-id "/messages"))
+        response (client/post (api-url (str "/channels/" channel-id "/messages"))
                              {:headers (assoc (auth-headers token user-agent)
                                               "Content-Type" "multipart/form-data")
                               :multipart multipart})]
@@ -689,7 +689,7 @@
         multipart (if file
                     (conj multipart {:name "file" :content file :filename (.getName file)})
                     multipart)
-        response @(http/post (api-url (str "/webhooks/" webhook-id "/" webhook-token))
+        response @(client/post (api-url (str "/webhooks/" webhook-id "/" webhook-token))
                              {:query-params {:wait wait}
                               :headers (assoc (auth-headers token user-agent)
                                               "Content-Type" "multipart/form-data")

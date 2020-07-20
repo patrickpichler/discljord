@@ -8,6 +8,7 @@
    [discljord.http :refer [gateway-url]]
    [discljord.util :refer [json-keyword clean-json-input]]
    [gniazdo.core :as ws]
+   [clj-http.lite.client :as client]
    [org.httpkit.client :as http])
   (:import
    (java.io
@@ -448,7 +449,7 @@
   [url token]
   (if-let [result
            (try
-             (when-let [response (:body @(http/get url
+             (when-let [response (:body (client/get url
                                                    {:headers
                                                     {"Authorization" token}}))]
                (when-let [json-body (clean-json-input (json/read-str response))]

@@ -8,7 +8,8 @@
    [discljord.specs :as ds]
    [discljord.util :refer [clean-json-input json-keyword]]
    [gniazdo.core :as ws]
-   [org.httpkit.fake :as fake]
+   [clj-http.lite.client :as client]
+   [clj-http.lite.fake :as fake]
    [org.httpkit.server :as s :refer [with-channel
                                      run-server
                                      send!
@@ -77,17 +78,17 @@
                                                 "t" "READY"
                                                 "d" {"session_id" "session"}})))
                         nil)))]
-      (fake/with-fake-http ["https://discordapp.com/api/gateway/bot?v=6&encoding=json"
-                            (fn [orig-fn opts callback]
-                              (if (= (get (:headers opts) "Authorization")
-                                     "Bot VALID_TOKEN")
-                                {:status 200 :body (json/write-str
-                                                    {"url" "ws://localhost:9009" "shards" 1
-                                                     "session_start_limit" {"total" 1000
-                                                                            "remaining" 1000
-                                                                            "reset_after" 1000}})}
-                                {:status 401
-                                 :body (json/write-str {"code" 0 "message" "401: Unauthorized"})}))]
+      (fake/with-fake-routes {"https://discordapp.com/api/gateway/bot?v=6&encoding=json"
+                              (fn [req]
+                                (if (= (get (:headers req) "Authorization")
+                                       "Bot VALID_TOKEN")
+                                  {:status 200 :body (json/write-str
+                                                       {"url" "ws://localhost:9009" "shards" 1
+                                                        "session_start_limit" {"total" 1000
+                                                                               "remaining" 1000
+                                                                               "reset_after" 1000}})}
+                                  {:status 505
+                                   :body (json/write-str {"code" 0 "message" "401: Unauthorized"})}))}
         (let [comm-chan (c/connect-bot! t (a/chan 10))]
           (Thread/sleep 1000)
           (a/put! comm-chan [:disconnect])
@@ -104,3 +105,4 @@
   []
   (json-conversion)
   (server-fixture websockets))
+
